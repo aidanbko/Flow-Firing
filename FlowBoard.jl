@@ -1,4 +1,5 @@
 using DataStructures
+using Primes
 
 function endConfigurationsCount(n::Int)
     boardLength = 2 * ceil(Int, sqrt(0.25 + 2 * n) - 0.5) - 1
@@ -46,6 +47,7 @@ function endConfigurationsCount(n::Int)
                     end
                 end
             end
+
             enqueueIfNotDuplicate(i, i - size(board, 1)) # Above
             enqueueIfNotDuplicate(i, i + size(board, 1)) # Below
             enqueueIfNotDuplicate(i, i - 1) # Left
@@ -63,27 +65,14 @@ end
 
 function generatePrimes(boardLength::Int)
 
-    function nextPrime(n::Int)
-        i = 3
-        while (i <= sqrt(n + 2))
-            if (n + 2) % i == 0
-                n += 2
-                i = 3
-                continue
-            end
-            i += 2
-        end
-        return n + 2
-    end
-
     primeMatrix = zeros(UInt128, boardLength, boardLength)
-    queue = Queue{Int}()
+    positions = Queue{Int}()
     primeMatrix[ceil(Int, size(primeMatrix, 1) ^ 2 / 2)] = 2
-    enqueue!(queue, ceil(Int, size(primeMatrix, 1) ^ 2 / 2))
+    enqueue!(positions, ceil(Int, size(primeMatrix, 1) ^ 2 / 2))
     p = 3
 
-    while (! isempty(queue))
-        i = dequeue!(queue)
+    while (! isempty(positions))
+        i = dequeue!(positions)
 
         # If the index borders the left or right boundary, continue
         if (i % size(primeMatrix, 1) == 0 || i % size(primeMatrix, 1) == 1)
@@ -98,20 +87,20 @@ function generatePrimes(boardLength::Int)
         function fillPositionIfEmpty(i)
             if (primeMatrix[i] == 0)
                 primeMatrix[i] = p
-                p = nextPrime(p)
-                enqueue!(queue, i)
+                p = Primes.nextprime(p, 2)
+                enqueue!(positions, i)
             end
         end
 
+        fillPositionIfEmpty(i - size(board, 1)) # Above
+        fillPositionIfEmpty(i + size(board, 1)) # Below
         fillPositionIfEmpty(i - 1) # Left
         fillPositionIfEmpty(i + 1) # Right
-        fillPositionIfEmpty(i + size(primeMatrix, 1)) # Below
-        fillPositionIfEmpty(i - size(primeMatrix, 1)) # Above
     end
 
     return primeMatrix
 end
 
 for n in 1:13
-    println("n=" * string(n) * " " * string(endConfigurationsCount(n)))
+    @time println("n=", n, " ", endConfigurationsCount(n))
 end
